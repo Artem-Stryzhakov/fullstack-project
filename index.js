@@ -37,6 +37,7 @@ app.get('/', function (req, res) {
             background-color: white;
             border-collapse: collapse;
             border: 1px solid black;
+            margin: auto;
         }
 
         th {
