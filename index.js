@@ -32,7 +32,6 @@ app.get('/', function (req, res) {
     <style>   
         #mainTable {
             width: 50%;
-            background-color: darkkhaki;
             text-align: center;
             background-color: white;
             border-collapse: collapse;
