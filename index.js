@@ -1,18 +1,14 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
 import mongoose from 'mongoose'
-import { validationResult } from 'express-validator';
+import {registerValidation, loginValidation, postCreateValidation} from './validations.js';
+import checkAuth from './utils/checkAuth.js';
 
-import { registerValidation } from './validations/auth.js';
+import * as UserController from './controllers/UserController.js';
+import * as PostController from './controllers/PostController.js';
+import Post from "./models/Post.js";
 
-import UserModel from './models/User.js';
-
-mongoose.connect(
-    'mongodb+srv://artem:WebDevelop@fullstackproject.gx3iiu1.mongodb.net/blog?retryWrites=true&w=majority'
-).then(() => {
-    console.log("DB ok");
-    })
+mongoose.connect('mongodb+srv://artem:WebDevelop@fullstackproject.gx3iiu1.mongodb.net/blog?retryWrites=true&w=majority')
+    .then(() => console.log("DB ok"))
     .catch((err) => console.log("DB is not ok\n", err))
 
 const app = express();
@@ -20,88 +16,23 @@ const app = express();
 app.use(express.json())
 
 app.get('/', function (req, res) {
-    res.send(`
-    <table id="mainTable">
-        <tr>
-            <th>Name</th> 
-            <th>Email</th>
-            <th>Age</th>
-        </tr>
-        <tr>
-            <td>Artem</td>
-            <td>strizakov00@gmail.com</td>
-            <td>18</td>
-        </tr>
-    </table>
-    <style>
-        body {
-            background-color: cadetblue;
-        }
-         
-        #mainTable {
-            width: 50%;
-            text-align: center;
-            background-color: white;
-            border-collapse: collapse;
-            border: 1px solid black;
-            margin: auto;
-        }
-
-        th {
-            background-color: black;
-            color: white;
-        }
-
-        td {
-            border: 1px solid black;
-        }
-</style>
-    `)
+    res.send("Hello world!")
 })
 
-app.post('/auth/register', registerValidation, async (req, res) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()){
-            return res.status(400).json(errors.array());
-        }
+// ===== LOGIN =====
+app.post('/auth/login', loginValidation, UserController.login)
 
-        const password = req.body.password;
-        const salt = await bcrypt.genSalt(10)
-        const hash = await bcrypt.hash(password, salt)
+// ===== REGISTER =====
+app.post('/auth/register', registerValidation, UserController.register)
 
-        const doc = new UserModel({
-            email: req.body.email,
-            fullName: req.body.fullName,
-            avatarUrl: req.body.avatarUrl,
-            passwordHash: hash,
-        });
+// ===== GET ME =====
+app.get('/auth/me', checkAuth, UserController.getMe)
 
-        const user = await doc.save();
-
-        const token = await jwt.sign(
-            {
-            _id: user._id,
-            },
-            'secret123',
-            {
-                expiresIn: "30d",
-            }
-        )
-
-        const { passwordHash, ...userData } = user._doc;
-
-        res.json({
-            ...userData._doc,
-            token,
-        })
-    } catch (err) {
-        console.log(err)
-        res.status(500).json({
-            message: "Не удалось зарегистрироваться.",
-        })
-    }
-})
+//app.get('/posts', checkAuth, PostController.getAll)
+//app.get('/posts/:id', checkAuth, PostController.getOne)
+app.post('/posts', checkAuth, postCreateValidation, PostController.create)
+//app.delete('/posts', checkAuth, PostController.remove)
+//app.patch('/posts', checkAuth, PostController.update)
 
 app.listen(4444, (err) => {
     if (err) {
